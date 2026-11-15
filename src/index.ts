@@ -4,7 +4,6 @@ import {db,one,all} from './db/index.ts';
 import {session,setSession,clearSession,requireLogin,requireAdmin,allowedClass,subscribed} from './lib/security.ts';
 import {parseCSV} from './lib/csv.ts';
 import {enqueueFeeReminders,flushNotifications} from './services/notifier.ts';
-import {startScheduler} from './services/scheduler.ts';
 const app=new Hono();
 const dateOK=(s:any):s is string=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.parse(s+'T00:00:00Z'));
 const codeOK=(s:any)=>typeof s==='string'&&/^[a-z0-9-]{2,32}$/.test(s);
@@ -103,8 +102,9 @@ app.post('/api/admin/fee-reminders',requireLogin,requireAdmin,c=>{const queued=e
 app.post('/api/homework/classes/:id/homework',requireLogin,async c=>{
  const id=(c.req.param('id')||'');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
  if(!subscribed(c))return c.json({error:'Subscription expired'},402);
- const data=await c.req.parseBody();const audio=data.audio,date=String(data.date||'');
- if(!dateOK(date)||!(audio instanceof File)||audio.size<100||audio.size>2*1024*1024||!audio.type.startsWith('audio/'))return c.json({error:'Invalid recording (max 2MB)'},400);
+ const data=await c.req.parseBody();const candidate=data.audio,date=String(data.date||'');
+ const audio=candidate instanceof File ? candidate : null;
+ if(!dateOK(date)||!audio||audio.size<100||audio.size>2*1024*1024||!audio.type.startsWith('audio/'))return c.json({error:'Invalid recording (max 2MB)'},400);
  const dir=`${process.env.DATA_DIR||'./data'}/uploads`;await Bun.$`mkdir -p ${dir}`.quiet();
  const key=crypto.randomUUID(),file=`${dir}/${key}.audio`;await Bun.write(file,audio);
  db.query('INSERT INTO homework_broadcasts(id,class_id,date,audio_path,mime_type) VALUES(?,?,?,?,?)').run(key,id,date,file,audio.type);
@@ -155,5 +155,4 @@ app.get('/manifest.json',serveStatic({path:'./public/manifest.json'}));
 app.get('/icons/*',serveStatic({root:'./public'}));
 app.notFound(c=>c.json({error:'Not found'},404));
 app.onError((e,c)=>{console.error('API error',e);return c.json({error:'Server error'},500);});
-startScheduler();
-export default {port:Number(process.env.PORT)||3000,fetch:app.fetch};
+export default app;
