@@ -1,4 +1,4 @@
-import app from './index.ts';
+import app from './backend.ts';
 import {startScheduler} from './services/scheduler.ts';
 
 startScheduler();
