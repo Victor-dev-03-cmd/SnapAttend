@@ -1,8 +1,6 @@
 import {Database} from 'bun:sqlite';
 const dir=process.env.DATA_DIR||'./data';
-await Bun.import {Database} from 'bun:sqlite';
-const dir=process.env.DATA_DIR||'./data';
-mkdir -p ${dir}`.quiet();
+await Bun.$`mkdir -p ${dir}`.quiet();
 export const db=new Database(`${dir}/snapattend.sqlite`,{create:true});
 db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
 db.exec(await Bun.file(new URL('./schema.sql',import.meta.url)).text());
