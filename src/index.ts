@@ -103,7 +103,7 @@ app.post('/api/homework/classes/:id/homework',requireLogin,async c=>{
  const id=(c.req.param('id')||'');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
  if(!subscribed(c))return c.json({error:'Subscription expired'},402);
  const data=await c.req.parseBody();const candidate=data.audio,date=String(data.date||'');
- const audio=candidate instanceof File ? candidate : null;
+ const audio=typeof candidate === 'string' ? null : (candidate as File | undefined);
  if(!dateOK(date)||!audio||audio.size<100||audio.size>2*1024*1024||!audio.type.startsWith('audio/'))return c.json({error:'Invalid recording (max 2MB)'},400);
  const dir=`${process.env.DATA_DIR||'./data'}/uploads`;await Bun.$`mkdir -p ${dir}`.quiet();
  const key=crypto.randomUUID(),file=`${dir}/${key}.audio`;await Bun.write(file,audio);
