@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Bun/Hono/Mango/SQLite offline-first school attendance MVP",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "start": "bun src/index.ts",
+    "dev": "bun --watch src/server.ts",
+    "start": "bun src/server.ts",
     "seed": "bun scripts/seed.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
