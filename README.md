@@ -61,3 +61,45 @@ Vercel remains a **UI demo**; `/api/student/*` requests are disabled there. In d
 mode, a device may preview its own location and Google Maps link after permission,
 but it is not sent to the server or guardian. Never test emergency response on
 the Vercel demo.
+
+## Multi-academy onboarding and role-specific PIN login
+
+**Sign In:** Search/select a registered academy (only academies opted into public listing appear).
+Choose **Admin**, **Teacher**, or **Student / Parent**, then enter a four-digit PIN.
+Teacher login additionally needs the **class code**; Student/Parent login needs the
+**class code and student's roll number**. These identify the correct account even when
+two users have the same four digits.
+
+**Register Academy:** New academy, school, college, campus, or tuition-centre
+owners can enter a unique code, name, institution type and initial **Admin PIN**.
+A new academy starts a 15-day trial. Registration is disabled on the Vercel UI-only
+demo and disabled on real deployments with `APP_ENV=production` unless an operator
+explicitly enables it. Before opening production registration, add organization
+ownership verification, abuse controls and a secure PIN recovery process.
+
+**Admin setup:** Create a class with its own teacher PIN; import students with
+roll numbers and guardian contact; use Admin → Student safety access to set
+separate student and guardian PINs for each selected child. Guardian PINs
+can only be issued when documented guardian contact/consent is present.
+PINs are Argon2id-hashed in SQLite; never store their plaintext in source.
+No administrator can retrieve an existing PIN; it must be reset.
+
+**Identity isolation:** A student and parent only see the associated student's
+attendance. They cannot fetch class rosters or other students. Staff API
+access is checked server-side, not inferred from the UI role buttons.
+
+**Important:** Four-digit PINs have only 10,000 possible values, so the included
+basic request throttling is MVP-only. Before storing real child data, add
+persistent rate limiting / stronger credentials, verified guardian accounts,
+audit trails, account recovery and enforced enrollment controls. Do not promise
+end-to-end encryption: only HTTPS in transit and password hashing are currently
+implemented. Vercel stays a UI preview without durable SQLite storage or login.
+
+**Developer test account, fresh local database only:**
+- Academy: `demo-school`
+- Teacher: class `grade-8a`, PIN `2468`
+- Admin: PIN `1357` (development seed only)
+
+Existing local databases seeded with the old admin password are not silently
+migrated to a weaker PIN. Back them up and use a controlled administrator
+credential migration procedure or a clean disposable demo database.
