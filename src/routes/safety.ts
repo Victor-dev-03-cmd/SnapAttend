@@ -37,7 +37,7 @@ function cleanExpired() {
 router.post('/api/admin/students/:id/safety-access',requireLogin,requireAdmin,async c=>{
   noStore(c);
   const user=session(c)!;
-  const studentId=c.req.param('id');
+  const studentId=c.req.param('id') || '';
   const student=one<{id:string;parent_opt_in:number;parent_phone:string|null}>(
     'SELECT s.id,s.parent_opt_in,s.parent_phone FROM students s JOIN classes c ON c.id=s.class_id WHERE s.id=? AND c.institution_id=?',
     studentId,user.institution_id
@@ -59,7 +59,7 @@ router.post('/api/admin/students/:id/location-request',requireLogin,requireAdmin
   const user=session(c)!;
   const student=one<{id:string;parent_opt_in:number}>(
     'SELECT s.id,s.parent_opt_in FROM students s JOIN classes c ON c.id=s.class_id WHERE s.id=? AND c.institution_id=?',
-    c.req.param('id'),user.institution_id
+    c.req.param('id') || '',user.institution_id
   );
   if(!student)return c.json({error:'Student not found'},404);
   if(!student.parent_opt_in)return c.json({error:'Guardian opt-in required'},409);
@@ -95,16 +95,18 @@ router.post('/api/student/safety-events',async c=>{
   const body=await c.req.json().catch(()=>null) as Record<string,unknown>|null;
   if(!body || body.consent_to_share !== true || !isSafetyKind(body.kind))
     return c.json({error:'Choose a safety action and explicitly confirm location sharing'},400);
+  const kind=body.kind;
+  const requestId=typeof body.request_id==='string'?body.request_id:null;
   const position=validateSafetyPosition(body.position);
   if(!position)return c.json({error:'Fresh GPS fix unavailable or invalid; nothing shared'},400);
   cleanExpired();
-  if(body.kind==='parent_request'){
-    if(typeof body.request_id!=='string')return c.json({error:'A pending verified request is required'},409);
-    const request=one<RequestRow>("SELECT id,requested_at,expires_at FROM location_requests WHERE id=? AND student_id=? AND status='pending' AND expires_at>?",body.request_id,student.id,nowIso());
+  if(kind==='parent_request'){
+    if(!requestId)return c.json({error:'A pending verified request is required'},409);
+    const request=one<RequestRow>("SELECT id,requested_at,expires_at FROM location_requests WHERE id=? AND student_id=? AND status='pending' AND expires_at>?",requestId,student.id,nowIso());
     if(!request)return c.json({error:'Request expired or already answered'},409);
   }
   const latest=one<{created_at:string}>(
-    'SELECT created_at FROM safety_events WHERE student_id=? AND kind=? ORDER BY created_at DESC LIMIT 1',student.id,body.kind
+    'SELECT created_at FROM safety_events WHERE student_id=? AND kind=? ORDER BY created_at DESC LIMIT 1',student.id,kind
   );
   if(latest && Date.now()-Date.parse(latest.created_at)<15000)
     return c.json({error:'This safety action was already submitted recently'},429);
@@ -112,9 +114,9 @@ router.post('/api/student/safety-events',async c=>{
   const time=nowIso();
   db.transaction(()=>{
     db.query('INSERT INTO safety_events(id,student_id,institution_id,kind,latitude,longitude,accuracy_m,observed_at,created_at,expires_at,notification_status,location_request_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
-      .run(id,student.id,student.institution_id,body.kind,position.latitude,position.longitude,position.accuracy_m,position.observed_at,time,new Date(Date.now()+86400000).toISOString(),'not_configured',body.kind==='parent_request'?body.request_id:null);
-    if(body.kind==='parent_request'){
-      db.query("UPDATE location_requests SET status='shared' WHERE id=? AND student_id=? AND status='pending'").run(body.request_id,student.id);
+      .run(id,student.id,student.institution_id,kind,position.latitude,position.longitude,position.accuracy_m,position.observed_at,time,new Date(Date.now()+86400000).toISOString(),'not_configured',kind==='parent_request'?requestId:null);
+    if(kind==='parent_request'){
+      db.query("UPDATE location_requests SET status='shared' WHERE id=? AND student_id=? AND status='pending'").run(requestId,student.id);
     }
   })();
   return c.json({ok:true,event_id:id,map_url:googleMapsLink(position),accuracy_m:position.accuracy_m,
