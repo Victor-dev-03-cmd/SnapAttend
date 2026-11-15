@@ -50,3 +50,7 @@ body.entry-mode #preview-note{max-width:440px;margin:0 auto 12px}
 body.entry-mode .demo-controls>div{flex-direction:column}
 body.entry-mode .demo-controls button{width:100%;margin:0}
 @media(max-width:420px){body.entry-mode main{padding:14px 13px 140px}.entry-head{padding-top:12px}.entry-card{padding:7px}.entry-form{padding:10px 8px 12px}.entry-form label:not(.entry-checkbox){margin-top:9px}.entry-head h1{font-size:27px!important}.role-pills .role-pill{font-size:10px;padding:9px 2px}}
+
+#academy-picker[hidden],#academy-private-wrap[hidden]{display:none}
+body.entry-mode .entry-text-link{background:none!important;border:0!important;padding:4px 2px!important;box-shadow:none!important;margin:6px 0 2px!important;color:#4f46e5!important;font-size:11px!important;font-weight:650!important;text-align:left!important;width:auto!important}
+body.entry-mode .entry-text-link:hover{text-decoration:underline}
