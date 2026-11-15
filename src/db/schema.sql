@@ -1,7 +1,7 @@
 PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS institutions (
  id TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
- admin_hash TEXT NOT NULL, subscription_tier TEXT NOT NULL DEFAULT 'trial',
+ admin_hash TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'academy', is_listed INTEGER NOT NULL DEFAULT 1, subscription_tier TEXT NOT NULL DEFAULT 'trial',
  active_until TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS classes (
@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS attendance_emergencies ON attendance_logs(emergency_f
 CREATE TABLE IF NOT EXISTS sessions (
  token_hash TEXT PRIMARY KEY, institution_id TEXT NOT NULL REFERENCES institutions(id),
  class_id TEXT, role TEXT NOT NULL CHECK(role IN ('admin','teacher')),
- expires_at TEXT NOT NULL
+ expires_at TEXT NOT NULL, student_id TEXT
 );
 CREATE TABLE IF NOT EXISTS notification_jobs (
  id TEXT PRIMARY KEY, dedupe_key TEXT NOT NULL UNIQUE,
@@ -89,3 +89,11 @@ CREATE TABLE IF NOT EXISTS safety_events (
 );
 CREATE INDEX IF NOT EXISTS safety_events_recent ON safety_events(institution_id,created_at);
 CREATE INDEX IF NOT EXISTS safety_events_expiry ON safety_events(expires_at);
+
+-- Student and guardian credentials are scoped to ONE child, never shared across an entire academy.
+CREATE TABLE IF NOT EXISTS student_pins (
+ student_id TEXT PRIMARY KEY REFERENCES students(id) ON DELETE CASCADE,
+ student_pin_hash TEXT,
+ parent_pin_hash TEXT,
+ issued_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
