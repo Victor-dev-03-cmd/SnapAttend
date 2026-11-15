@@ -23,7 +23,7 @@ app.post('/api/auth/login',async c=>{
  const inst=one<any>('SELECT id,admin_hash FROM institutions WHERE code=?',code);
  const klass=inst&&role==='teacher'?one<any>('SELECT id,teacher_pin_hash FROM classes WHERE institution_id=? AND code=?',inst.id,classCode):null;
  const hashed=role==='admin'?inst?.admin_hash:klass?.teacher_pin_hash;
- if(!hashed||!await Bun.password.verify(password,hashed)){limits.set(key,{n:(limit?.end>Date.now()?limit.n:0)+1,end:Date.now()+900000});return c.json({error:'Invalid sign-in details'},401);}
+ if(!hashed||!await Bun.password.verify(password,hashed)){limits.set(key,{n:(limit&&limit.end>Date.now()?limit.n:0)+1,end:Date.now()+900000});return c.json({error:'Invalid sign-in details'},401);}
  limits.delete(key);setSession(c,{role:role as 'teacher'|'admin',institution_id:inst.id,class_id:klass?.id||null});return c.json({ok:true});
 });
 app.get('/api/auth/me',c=>{const s=session(c);return s?c.json({session:s}):c.json({error:'Not signed in'},401);});
@@ -36,11 +36,11 @@ app.get('/api/classes',requireLogin,c=>{
  return c.json({classes});
 });
 app.get('/api/classes/:id/roster',c=>{
- const id=c.req.param('id');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
+ const id=(c.req.param('id')||'');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
  return c.json({students:all('SELECT id,roll_no,name FROM students WHERE class_id=? ORDER BY roll_no,name',id)});
 });
 app.post('/api/classes/:id/import',requireAdmin,async c=>{
- const id=c.req.param('id');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
+ const id=(c.req.param('id')||'');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
  if(!(c.req.header('content-type')||'').includes('text/csv'))return c.json({error:'Use text/csv'},415);
  const raw=await c.req.text();if(raw.length>1024*1024)return c.json({error:'CSV too large'},413);
  let rows:string[][];try{rows=parseCSV(raw);}catch{return c.json({error:'Malformed CSV'},400);}
@@ -61,12 +61,12 @@ app.post('/api/classes/:id/import',requireAdmin,async c=>{
  return c.json({ok:true,imported:recs.length});
 });
 app.get('/api/classes/:id/attendance/:date',c=>{
- const id=c.req.param('id'),date=c.req.param('date');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
+ const id=(c.req.param('id')||''),date=c.req.param('date');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
  if(!dateOK(date))return c.json({error:'Invalid date'},400);
  return c.json({records:all('SELECT student_id,status,parent_reply_status,emergency_flag FROM attendance_logs WHERE class_id=? AND date=?',id,date)});
 });
 app.post('/api/classes/:id/attendance',async c=>{
- const id=c.req.param('id');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
+ const id=(c.req.param('id')||'');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
  if(!subscribed(c))return c.json({error:'Subscription expired'},402);
  const b=await c.req.json().catch(()=>({})) as any;
  if(!dateOK(b.date)||typeof b.batch_id!=='string'||! /^[0-9a-f-]{36}$/i.test(b.batch_id)||!Array.isArray(b.absent_ids)||b.absent_ids.some((x:any)=>typeof x!=='string')||b.absent_ids.length>1000)return c.json({error:'Invalid attendance data'},400);
@@ -98,12 +98,12 @@ app.get('/api/admin/summary',requireLogin,requireAdmin,c=>{
 });
 app.post('/api/admin/emergencies/:id/acknowledge',requireLogin,requireAdmin,c=>{
  const s=session(c)!;db.query(`UPDATE attendance_logs SET acknowledged_at=datetime('now')
- WHERE id=? AND emergency_flag=1 AND class_id IN (SELECT id FROM classes WHERE institution_id=?)`).run(c.req.param('id'),s.institution_id);
+ WHERE id=? AND emergency_flag=1 AND class_id IN (SELECT id FROM classes WHERE institution_id=?)`).run((c.req.param('id')||''),s.institution_id);
  return c.json({ok:true});
 });
 app.post('/api/admin/fee-reminders',requireLogin,requireAdmin,c=>{const queued=enqueueFeeReminders();void flushNotifications();return c.json({ok:true,queued});});
 app.post('/api/homework/classes/:id/homework',requireLogin,async c=>{
- const id=c.req.param('id');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
+ const id=(c.req.param('id')||'');if(!allowedClass(c,id))return c.json({error:'Forbidden'},403);
  if(!subscribed(c))return c.json({error:'Subscription expired'},402);
  const data=await c.req.parseBody();const audio=data.audio,date=String(data.date||'');
  if(!dateOK(date)||!(audio instanceof File)||audio.size<100||audio.size>2*1024*1024||!audio.type.startsWith('audio/'))return c.json({error:'Invalid recording (max 2MB)'},400);
@@ -114,7 +114,7 @@ app.post('/api/homework/classes/:id/homework',requireLogin,async c=>{
 });
 app.use('/api/homework/*',requireLogin);
 app.get('/api/homework/:id/audio',async c=>{
- const s=session(c)!,item=one<any>(`SELECT h.audio_path,h.mime_type,c.institution_id,h.class_id FROM homework_broadcasts h JOIN classes c ON c.id=h.class_id WHERE h.id=?`,c.req.param('id'));
+ const s=session(c)!,item=one<any>(`SELECT h.audio_path,h.mime_type,c.institution_id,h.class_id FROM homework_broadcasts h JOIN classes c ON c.id=h.class_id WHERE h.id=?`,(c.req.param('id')||''));
  if(!item||item.institution_id!==s.institution_id||(s.role==='teacher'&&s.class_id!==item.class_id))return c.json({error:'Not found'},404);
  const f=Bun.file(item.audio_path);if(!await f.exists())return c.json({error:'File missing'},404);
  return new Response(f,{headers:{'Content-Type':item.mime_type||'application/octet-stream','Cache-Control':'no-store'}});
