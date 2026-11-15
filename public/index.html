@@ -12,10 +12,17 @@
       <button type="button" id="tab-register" class="entry-tab" aria-selected="false" role="tab">Register Academy</button>
     </div>
     <form id="login-form" class="entry-form">
-      <label for="academy-search">Find your academy</label>
-      <input id="academy-search" type="search" placeholder="Search school, college or academy" autocomplete="off">
-      <label for="school" class="tiny-label">Registered academies</label>
-      <select id="school" required><option value="">Select an academy</option></select>
+      <div id="academy-picker">
+        <label for="academy-search">Find your academy</label>
+        <input id="academy-search" type="search" placeholder="Search school, college or academy" autocomplete="off">
+        <label for="school" class="tiny-label">Registered academies</label>
+        <select id="school" required><option value="">Select an academy</option></select>
+      </div>
+      <div id="academy-private-wrap" hidden>
+        <label for="academy-private-code">Private academy code</label>
+        <input id="academy-private-code" placeholder="e.g. greenfield-2026" pattern="[a-z0-9-]{3,32}" maxlength="32" autocomplete="off">
+      </div>
+      <button type="button" id="academy-code-toggle" class="entry-text-link">Use private academy code instead</button>
       <label for="password">Your 4-digit PIN</label>
       <input id="password" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="••••" required>
       <input type="hidden" id="role" value="teacher">
