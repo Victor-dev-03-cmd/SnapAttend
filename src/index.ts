@@ -129,7 +129,10 @@ app.post('/api/webhooks/whatsapp',async c=>{
  const body=await c.req.text(),sig=c.req.header('x-hub-signature-256')||'';
  const digest=new Uint8Array(await crypto.subtle.sign('HMAC',await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']),new TextEncoder().encode(body)));
  const expected='sha256='+Array.from(digest,b=>b.toString(16).padStart(2,'0')).join('');
- if(sig.length!==expected.length||!crypto.timingSafeEqual?.(sig,expected))return c.json({error:'Bad signature'},403);
+ // Constant-time comparison without a Node.js runtime or external crypto library.
+ let diff=sig.length^expected.length;
+ for(let i=0;i<expected.length;i++)diff|=(sig.charCodeAt(i)||0)^expected.charCodeAt(i);
+ if(diff!==0)return c.json({error:'Bad signature'},403);
  const payload=JSON.parse(body);
  for(const entry of payload.entry||[])for(const change of entry.changes||[])for(const msg of change.value?.messages||[]){
   const choice=msg.interactive?.button_reply?.id,from=msg.from,messageId=msg.id;

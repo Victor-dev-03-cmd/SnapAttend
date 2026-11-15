@@ -2,7 +2,7 @@ import type {Context,Next} from 'hono';
 import {getCookie,setCookie,deleteCookie} from 'hono/cookie';
 import {db,one} from '../db/index.ts';
 export type Session={role:'teacher'|'admin',institution_id:string,class_id:string|null};
-const hash=(t:string)=>Bun.hash(t).toString(16); // session-token digest, not password hashing
+const hash=(token:string)=>new Bun.CryptoHasher('sha256').update(token).digest('hex');
 const cookie='sa_session';
 export function session(c:Context):Session|null{
  const token=getCookie(c,cookie);if(!token)return null;
@@ -10,16 +10,15 @@ export function session(c:Context):Session|null{
 }
 export function setSession(c:Context,s:Session){
  const token=crypto.randomUUID()+crypto.randomUUID();
- execSession('INSERT INTO sessions(token_hash,role,institution_id,class_id,expires_at) VALUES(?,?,?,?,?)',hash(token),s.role,s.institution_id,s.class_id,new Date(Date.now()+12*3600000).toISOString());
+ db.query('INSERT INTO sessions(token_hash,role,institution_id,class_id,expires_at) VALUES(?,?,?,?,?)')
+  .run(hash(token),s.role,s.institution_id,s.class_id,new Date(Date.now()+12*3600000).toISOString());
  setCookie(c,cookie,token,{httpOnly:true,sameSite:'Lax',secure:process.env.APP_ENV==='production',path:'/',maxAge:43200});
 }
-function execSession(sql:string,...a:any[]){db.query(sql).run(...a);}
-export function clearSession(c:Context){const t=getCookie(c,cookie);if(t)execSession('DELETE FROM sessions WHERE token_hash=?',hash(t));deleteCookie(c,cookie,{path:'/'});}
+export function clearSession(c:Context){const token=getCookie(c,cookie);if(token)db.query('DELETE FROM sessions WHERE token_hash=?').run(hash(token));deleteCookie(c,cookie,{path:'/'});}
 export async function requireLogin(c:Context,next:Next){
  if(!session(c))return c.json({error:'Sign in required'},401);
- // Same-site cookies + Origin verification for unsafe methods
  if(!['GET','HEAD','OPTIONS'].includes(c.req.method)){
- const origin=c.req.header('origin');if(origin&&new URL(origin).host!==new URL(c.req.url).host)return c.json({error:'Origin mismatch'},403);
+  const origin=c.req.header('origin');if(origin&&new URL(origin).host!==new URL(c.req.url).host)return c.json({error:'Origin mismatch'},403);
  }
  await next();
 }
