@@ -2,3 +2,51 @@
 .preview-note{display:flex;flex-wrap:wrap;gap:6px 14px;padding:13px 18px;margin:0 0 22px;border:1px solid #c3d8e5;border-radius:14px;background:#edf5fc;color:#23465f;font-size:13px}.preview-note strong{white-space:nowrap}.demo-controls{border-top:1px solid #e1ece7;padding-top:15px;margin-top:18px}.demo-controls span{font-size:13px;color:#4d746d}.demo-controls>div{display:flex;gap:8px;margin-top:10px}.demo-controls button{margin:0;flex:1;padding:10px;font-size:13px}@media(max-width:500px){.demo-controls>div{flex-direction:column}.preview-note strong{white-space:normal}}
 
 .student-portal-link a{font-weight:700;color:#0b6e66;text-decoration:none}.student-portal-link a:hover{text-decoration:underline}.safety-admin-description{font-size:13px;color:#658075;line-height:1.5}#issued-student-token{resize:vertical;border:1px solid #bdd5cb;padding:10px;width:100%;border-radius:10px;font-family:monospace;word-break:break-all}#safety-events .alert{display:flex;flex-direction:column;gap:5px;line-height:1.5}#safety-events .alert small{color:#6e8479}#safety-events .alert a{color:#0b6e66;font-size:13px;font-weight:700}
+
+/* Lightweight first-time entry experience — scoped so staff dashboards remain unchanged. */
+body.entry-mode{background:#f9fafb;color:#18181b;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body.entry-mode>header{display:none}
+body.entry-mode main{max-width:550px;margin:0 auto;padding:22px 18px 140px;min-height:88svh}
+#login.entry-screen{display:block;max-width:440px;margin:0 auto;min-height:auto}
+.entry-head{text-align:center;padding:17px 0 20px}
+.entry-logo{height:56px;width:56px;margin:0 auto 8px;display:grid;place-items:center;border-radius:17px;background:#efefff;box-shadow:0 8px 20px #4f46e514}
+.entry-logo svg{width:43px;height:43px}
+.entry-head h1{font-size:30px!important;line-height:1.15!important;letter-spacing:-1.2px!important;font-weight:760!important;margin:0 0 8px!important;color:#18181b!important}
+.entry-trust{display:inline-block;background:#e6fffa;color:#00796b;font-size:10px;font-weight:750;letter-spacing:.65px;padding:7px 11px;border-radius:999px}
+.entry-head>p{font-size:12px;color:#64748b;margin:11px auto 0;max-width:320px}
+.entry-card{border:1px solid #eceef2;background:#fff;border-radius:20px;padding:8px;box-shadow:0 16px 38px #1118270b,0 1px 3px #11182708}
+.entry-tabs{display:grid;grid-template-columns:1fr 1fr;background:#f1f2f5;border-radius:14px;padding:4px;gap:4px;margin-bottom:2px}
+.entry-tabs .entry-tab{padding:10px 5px;font-size:13px;font-weight:650;box-shadow:none;border:0;background:transparent;color:#5b6473;border-radius:11px;white-space:nowrap}
+.entry-tabs .entry-tab.is-active{background:#fff;color:#272247;box-shadow:0 1px 5px #1f29371c}
+.entry-form{border:0;box-shadow:none;padding:13px 10px 14px;border-radius:0;display:block}
+.entry-form[hidden]{display:none!important}
+.entry-form label:not(.entry-checkbox){font-size:12px;font-weight:650;color:#2c313d;margin:10px 0 0}
+.entry-form label.tiny-label{font-size:11px;color:#636977;font-weight:500;margin:8px 0 0}
+.entry-form input:not([type=checkbox]):not([type=hidden]),.entry-form select{min-width:0;width:100%;height:42px;outline:none;border-radius:11px;border:1px solid #d8dce3;background:#fff;padding:0 12px;color:#18181b;font-weight:450;font-size:13px;margin:5px 0 0;box-shadow:0 1px 2px #10182706}
+.entry-form input:focus-visible,.entry-form select:focus-visible{border-color:#4f46e5!important;outline:2px solid #4f46e522!important}
+.entry-form #academy-search{background:#f9fafb}
+.role-pills{display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:3px;margin-top:12px;background:#f2f3f7;border-radius:999px;padding:4px}
+.role-pills .role-pill{min-width:0;padding:9px 4px;border:0;box-shadow:none;background:transparent;border-radius:999px;font-size:11px;font-weight:650;color:#3e4450;white-space:nowrap}
+.role-pills .role-pill.is-selected{background:#d9d6ff;color:#282277;box-shadow:0 2px 8px #4f46e51a}
+.entry-form #class-wrap,.entry-form #identity-wrap,.entry-form #family-role-wrap{display:block}
+.entry-form #class-wrap[hidden],.entry-form #identity-wrap[hidden],.entry-form #family-role-wrap[hidden]{display:none}
+.entry-form .entry-submit{margin-top:16px;width:100%;height:46px;border-radius:11px;background:#18181b;border-color:#18181b;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:-.1px}
+.entry-form .entry-submit:hover{background:#33333a}
+.entry-form .entry-submit span{font-size:17px}
+.entry-form #error,.entry-form #reg-error{font-size:12px;color:#b42318;margin:9px 0 0;line-height:1.5}
+.entry-form #error:empty,.entry-form #reg-error:empty{display:none}
+.entry-help{font-size:11px;color:#737a87;text-align:center;line-height:1.45;margin:12px 0 0}
+.entry-foot{text-align:center;font-size:11px;color:#88909d;margin:18px auto 6px;max-width:340px}
+.entry-safety{text-align:center;margin:8px 0;font-size:12px}
+.entry-safety a{color:#4f46e5;font-weight:650;text-decoration:none}
+.entry-checkbox{display:flex!important;align-items:flex-start;gap:8px;margin:14px 0 0!important;font-size:11px!important;line-height:1.45;color:#525a6a!important}
+.entry-checkbox input{margin:0;flex-shrink:0;width:15px;height:15px;accent-color:#4f46e5}
+body.entry-mode #install-banner{background:#ffffffef;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 36px #15151b20;border:1px solid #eceef1;border-radius:18px;padding:13px 15px;max-width:430px}
+body.entry-mode #install-btn{background:#05846e;color:#fff;border:0}
+body.entry-mode #install-label{font-size:11px}
+body.entry-mode #install-hint{color:#7a8490}
+body.entry-mode footer{font-size:11px;color:#9ca3af}
+body.entry-mode #preview-note{max-width:440px;margin:0 auto 12px}
+body.entry-mode .demo-controls>div{flex-direction:column}
+body.entry-mode .demo-controls button{width:100%;margin:0}
+@media(max-width:420px){body.entry-mode main{padding:14px 13px 140px}.entry-head{padding-top:12px}.entry-card{padding:7px}.entry-form{padding:10px 8px 12px}.entry-form label:not(.entry-checkbox){margin-top:9px}.entry-head h1{font-size:27px!important}.role-pills .role-pill{font-size:10px;padding:9px 2px}}
