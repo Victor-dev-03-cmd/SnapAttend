@@ -96,7 +96,7 @@ $('register-form').addEventListener('submit',async function(e){
  }catch(err){$('reg-error').textContent=err.message;}
 });
 setRole('teacher');
-$('logout').addEventListener('click',async function(){if(!state.demo){try{await api('/api/auth/logout',{method:'POST'});}catch(e){}}state.demo=false;state.session=null;document.body.classList.remove('workspace');$('issued-student-token').value='';$('issued-token-wrap').hidden=true;$('desk').hidden=true;$('login').hidden=false;$('logout').hidden=true;});
+$('logout').addEventListener('click',async function(){if(!state.demo){try{await api('/api/auth/logout',{method:'POST'});}catch(e){}}state.demo=false;state.session=null;document.body.classList.remove('workspace');document.body.classList.add('entry-mode');$('issued-student-token').value='';$('issued-token-wrap').hidden=true;$('desk').hidden=true;$('login').hidden=false;$('logout').hidden=true;});
 async function init(){
  var me=await api('/api/auth/me');
  state.session=me.session;state.classes=[];
@@ -107,7 +107,7 @@ async function init(){
  $('login').hidden=true;$('desk').hidden=false;$('logout').hidden=false;
  $('teacher').hidden=role!=='teacher';$('admin').hidden=role!=='admin';
  $('family').hidden=role!=='student'&&role!=='parent';
- document.body.classList.add('workspace');
+ document.body.classList.remove('entry-mode');document.body.classList.add('workspace');
  $('today').textContent=new Date().toLocaleDateString();$('date').value=today();
  if(role==='teacher'){
   state.classId=state.classes[0]&&state.classes[0].id;
