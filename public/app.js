@@ -56,6 +56,14 @@ async function loadAcademies(search){
   $('error').textContent='Cannot load academies. If this is a UI preview, select a Demo below.';
  }
 }
+$('academy-code-toggle').addEventListener('click',function(){
+ var manual=$('academy-private-wrap').hidden;
+ $('academy-private-wrap').hidden=!manual;
+ $('academy-picker').hidden=manual;
+ $('academy-private-code').required=manual;
+ $('school').required=!manual;
+ $('academy-code-toggle').textContent=manual?'Select from registered academies':'Use private academy code instead';
+});
 $('academy-search').addEventListener('input',function(){
  clearTimeout(academySearchTimer);
  var search=$('academy-search').value.trim();
@@ -72,7 +80,7 @@ $('login-form').addEventListener('submit',async function(e){
  if(!/^[0-9]{4}$/.test(pin)){$('error').textContent='Enter your 4-digit PIN';return;}
  try{
   await api('/api/auth/login',{method:'POST',body:{
-   institution_code:$('school').value,class_code:role==='admin'?'':$('class').value.trim(),
+   institution_code:$('academy-private-wrap').hidden?$('school').value:$('academy-private-code').value.trim(),class_code:role==='admin'?'':$('class').value.trim(),
    roll_no:role==='student'||role==='parent'?$('roll').value.trim():'',
    role:role,pin:pin
   }});
