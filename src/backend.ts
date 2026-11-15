@@ -3,28 +3,17 @@ import {serveStatic} from '@hono/bun';
 import {db,one,all} from './db/index.ts';
 import {session,setSession,clearSession,requireLogin,requireAdmin,allowedClass,subscribed} from './lib/security.ts';
 import {parseCSV} from './lib/csv.ts';
+import safetyRoutes from './routes/safety.ts';
+import academyRoutes from './routes/academy-auth.ts';
 import {enqueueFeeReminders,flushNotifications} from './services/notifier.ts';
 const app=new Hono();
+app.route('/',academyRoutes);
+app.route('/',safetyRoutes);
 const dateOK=(s:any):s is string=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.parse(s+'T00:00:00Z'));
 const codeOK=(s:any)=>typeof s==='string'&&/^[a-z0-9-]{2,32}$/.test(s);
 const limits=new Map<string,{n:number;end:number}>();
 app.use('*',async(c,next)=>{c.header('X-Content-Type-Options','nosniff');c.header('X-Frame-Options','DENY');c.header('Referrer-Policy','same-origin');if(c.req.path.startsWith('/api/'))c.header('Cache-Control','no-store');await next();});
 app.get('/api/health',c=>c.json({ok:true,service:'SnapAttend',stack:['Bun','Hono','Mango','SQLite']}));
-app.post('/api/auth/login',async c=>{
- const b=await c.req.json().catch(()=>({})) as any;
- const code=String(b.institution_code||'').toLowerCase(),classCode=String(b.class_code||'').toLowerCase(),role=String(b.role||''),password=String(b.password||'');
- if(!codeOK(code)||!['teacher','admin'].includes(role)||password.length<4||password.length>128)return c.json({error:'Invalid sign-in details'},400);
- const origin=c.req.header('origin');if(origin&&new URL(origin).host!==new URL(c.req.url).host)return c.json({error:'Origin mismatch'},403);
- const key=(c.req.header('x-real-ip')||'local').slice(0,70)+':'+code;
- const limit=limits.get(key);if(limit&&limit.n>=6&&limit.end>Date.now())return c.json({error:'Try again in 15 minutes'},429);
- const inst=one<any>('SELECT id,admin_hash FROM institutions WHERE code=?',code);
- const klass=inst&&role==='teacher'?one<any>('SELECT id,teacher_pin_hash FROM classes WHERE institution_id=? AND code=?',inst.id,classCode):null;
- const hashed=role==='admin'?inst?.admin_hash:klass?.teacher_pin_hash;
- if(!hashed||!await Bun.password.verify(password,hashed)){limits.set(key,{n:(limit&&limit.end>Date.now()?limit.n:0)+1,end:Date.now()+900000});return c.json({error:'Invalid sign-in details'},401);}
- limits.delete(key);setSession(c,{role:role as 'teacher'|'admin',institution_id:inst.id,class_id:klass?.id||null});return c.json({ok:true});
-});
-app.get('/api/auth/me',c=>{const s=session(c);return s?c.json({session:s}):c.json({error:'Not signed in'},401);});
-app.post('/api/auth/logout',c=>{clearSession(c);return c.json({ok:true});});
 app.use('/api/classes/*',requireLogin);
 app.get('/api/classes',requireLogin,c=>{
  const s=session(c)!;
@@ -148,6 +137,9 @@ app.post('/api/webhooks/whatsapp',async c=>{
 });
 app.get('/',serveStatic({path:'./public/index.html'}));
 app.get('/app.js',serveStatic({path:'./public/app.js'}));
+app.get('/student.html',serveStatic({path:'./public/student.html'}));
+app.get('/student.js',serveStatic({path:'./public/student.js'}));
+app.get('/student.css',serveStatic({path:'./public/student.css'}));
 app.get('/styles.css',serveStatic({path:'./public/styles.css'}));
 app.get('/mango.js',serveStatic({path:'./public/mango.js'}));
 app.get('/sw.js',serveStatic({path:'./public/sw.js'}));

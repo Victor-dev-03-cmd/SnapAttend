@@ -1,10 +1,85 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b6e66"><meta name="description" content="SnapAttend: attendance in seconds, safer school days."><link rel="manifest" href="/manifest.json"><link rel="stylesheet" href="/styles.css"><title>SnapAttend — Safe-Reach</title></head>
-<body><header><strong class="brand">✓ SnapAttend</strong><span id="net">Online</span><button id="logout" hidden>Sign out</button></header>
-<main><div id="preview-note" class="preview-note" role="status" hidden><strong>UI preview — no real attendance is recorded</strong><span>The teacher and administrator screens below use fictional students. Parent messaging, emergency alerts and data saving are disabled until the persistent Bun + SQLite backend is deployed.</span></div><section id="login"><h1>Every student counts.</h1><p>10-second attendance. Peace of mind for every parent.</p>
-<form id="login-form"><h2>Sign in</h2><label>Role<select id="role"><option value="teacher">Teacher</option><option value="admin">Administrator</option></select></label><label>Institution code<input id="school" value="demo-school" required autocomplete="organization"></label><label id="class-wrap">Class code<input id="class" value="grade-8a"></label><label>PIN / Password<input type="password" id="password" required></label><button class="primary">Continue</button><p id="error" role="alert"></p><div id="demo-controls" class="demo-controls" hidden><span>Explore the interface without signing in:</span><div><button type="button" id="demo-teacher">View teacher demo</button><button type="button" id="demo-admin">View admin demo</button></div></div></form></section>
+<body class="entry-mode"><header><strong class="brand">✓ SnapAttend</strong><span id="net">Online</span><button id="logout" hidden>Sign out</button></header>
+<main><div id="preview-note" class="preview-note" role="status" hidden><strong>UI preview — no real attendance is recorded</strong><span>The teacher and administrator screens below use fictional students. Parent messaging, emergency alerts and data saving are disabled until the persistent Bun + SQLite backend is deployed.</span></div><section id="login" class="entry-screen">
+  <div class="entry-head">
+    <div class="entry-logo" aria-hidden="true"><svg viewBox="0 0 48 48" width="31" height="31" fill="none"><path d="M24 3 42 11v13c0 11-7 17-18 21C13 41 6 35 6 24V11L24 3Z" fill="#4F46E5"/><path d="M18 30h12M18 30c2-2 2-5 2-8a4 4 0 0 1 8 0c0 3 0 6 2 8m-7 4h2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h1>SnapAttend</h1><span class="entry-trust">SECURE ACCESS · LIGHTWEIGHT TOOL</span>
+    <p>Attendance and safety, made simple for every academy.</p>
+  </div>
+  <div class="entry-card">
+    <div class="entry-tabs" role="tablist" aria-label="Academy access">
+      <button type="button" id="tab-signin" class="entry-tab is-active" aria-selected="true" role="tab">Sign In</button>
+      <button type="button" id="tab-register" class="entry-tab" aria-selected="false" role="tab">Register Academy</button>
+    </div>
+    <form id="login-form" class="entry-form">
+      <div id="academy-picker">
+        <label for="academy-search">Find your academy</label>
+        <input id="academy-search" type="search" placeholder="Search school, college or academy" autocomplete="off">
+        <label for="school" class="tiny-label">Registered academies</label>
+        <select id="school" required><option value="">Select an academy</option></select>
+      </div>
+      <div id="academy-private-wrap" hidden>
+        <label for="academy-private-code">Private academy code</label>
+        <input id="academy-private-code" placeholder="e.g. greenfield-2026" pattern="[a-z0-9-]{3,32}" maxlength="32" autocomplete="off">
+      </div>
+      <button type="button" id="academy-code-toggle" class="entry-text-link">Use private academy code instead</button>
+      <label for="password">Your 4-digit PIN</label>
+      <input id="password" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="••••" required>
+      <input type="hidden" id="role" value="teacher">
+      <div class="role-pills" role="group" aria-label="Choose your access role">
+        <button type="button" class="role-pill" data-role="admin" aria-pressed="false">Admin</button>
+        <button type="button" class="role-pill is-selected" data-role="teacher" aria-pressed="true">Teacher</button>
+        <button type="button" class="role-pill" data-role="family" aria-pressed="false">Student/Parent</button>
+      </div>
+      <label id="family-role-wrap" hidden for="family-role">I am a
+        <select id="family-role"><option value="student">Student</option><option value="parent">Parent / Guardian</option></select>
+      </label>
+      <label id="class-wrap" for="class">Class code
+        <input id="class" autocomplete="off" placeholder="e.g. grade-8a" required>
+      </label>
+      <label id="identity-wrap" hidden for="roll">Student roll number
+        <input id="roll" autocomplete="off" placeholder="e.g. 01">
+      </label>
+      <button class="entry-submit" type="submit">Continue to Workspace <span aria-hidden="true">→</span></button>
+      <p id="error" role="alert" aria-live="polite"></p>
+      <p class="entry-help">Forgot your PIN or academy code? Contact your academy administrator.</p>
+      <div id="demo-controls" class="demo-controls" hidden><span>Preview mode — explore without signing in</span><div><button type="button" id="demo-teacher">Teacher Demo</button><button type="button" id="demo-admin">Admin Demo</button><button type="button" id="demo-family">Student/Parent Demo</button></div></div>
+    </form>
+    <form id="register-form" class="entry-form" hidden>
+      <label for="reg-name">Institution name</label><input id="reg-name" placeholder="e.g. Greenfield Academy" maxlength="100" required>
+      <label for="reg-kind">Institution type</label><select id="reg-kind"><option value="academy">Academy</option><option value="school">School</option><option value="college">College</option><option value="campus">Campus</option><option value="tuition">Tuition Centre</option></select>
+      <label for="reg-code">Your academy code</label><input id="reg-code" placeholder="e.g. greenfield-2026" pattern="[a-z0-9-]{3,32}" maxlength="32" required>
+      <label for="reg-pin">Create 4-digit Admin PIN</label><input id="reg-pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required placeholder="••••">
+      <label for="reg-confirm">Confirm Admin PIN</label><input id="reg-confirm" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required placeholder="••••">
+      <label class="entry-checkbox" for="reg-listing"><input id="reg-listing" type="checkbox" checked><span>Show our academy name and code in the public selection list</span></label>
+      <button class="entry-submit" type="submit">Register Academy <span aria-hidden="true">→</span></button>
+      <p id="reg-error" role="alert" aria-live="polite"></p>
+      <p class="entry-help">15-day trial · Admin approval and identity verification required before real student use.</p>
+    </form>
+  </div>
+  <p class="entry-foot">For schools, colleges, campuses, tuition centres and academies.</p>
+  <p class="entry-safety"><a href="/student.html">Student Safety · Check-In & SOS</a></p>
+</section>
 <section id="desk" hidden><div class="heading"><div><small>CLASSROOM WORKSPACE</small><h1 id="title">Today's attendance</h1><p id="subtitle">Only tap absent students.</p></div><div id="today"></div></div>
 <div id="teacher" hidden><div class="metrics"><article>Students<strong id="total">0</strong></article><article>Present<strong id="present">0</strong></article><article>Absent<strong id="absent">0</strong></article></div><div class="columns"><section class="panel"><h2>Daily roll call</h2><label>Date<input id="date" type="date"></label><div id="roster"></div><button class="primary" id="submit">Submit attendance</button><p id="queue"></p></section><aside class="panel"><h2>Voice-to-homework</h2><p>Hold the button to record, release to save. Audio is private; parent broadcast is not enabled.</p><button id="record">● Hold to record</button><p id="record-status"></p><hr><h2>Safe-Reach</h2><p>Parent notifications are mock-only until WhatsApp is configured and approved.</p></aside></div></div>
-<div id="admin" hidden><div id="emergency" class="emergency" hidden><strong>⚠ Emergency reply received</strong><p>Contact the parent immediately; dashboard notification is not emergency dispatch.</p></div><div class="columns"><section class="panel"><h2>Active emergency replies</h2><div id="alerts"></div><h2>Recent attendance</h2><div id="recent"></div></section><aside class="panel"><h2>Import students</h2><label>Class<select id="import-class"></select></label><label>CSV file<input id="csv" type="file" accept=".csv,text/csv"></label><button id="upload">Import CSV</button><p id="csv-status"></p><hr><h2>Fee reminders</h2><button id="fees">Queue reminders (mock)</button><p id="fee-status"></p></aside></div></div>
+<div id="family" hidden><div class="columns"><section class="panel"><h2 id="family-title">My attendance</h2><p id="family-school"></p><div id="family-records"></div></section><aside class="panel"><h2>Safe-Reach</h2><p>Only your attendance is visible here. Your academy must issue a separate student safety access code to enable optional GPS sharing.</p><a href="/student.html">Open Student Safety Portal</a></aside></div></div>
+<div id="admin" hidden><div id="emergency" class="emergency" hidden><strong>⚠ Emergency reply received</strong><p>Contact the parent immediately; dashboard notification is not emergency dispatch.</p></div><div class="columns"><section class="panel"><h2>Active emergency replies</h2><div id="alerts"></div><h2>Recent attendance</h2><div id="recent"></div><hr><h2>Recent student safety events</h2><div id="safety-events"></div></section><aside class="panel"><h2>Create class</h2>
+<label>Class name<input id="new-class-name" placeholder="e.g. Grade 8 A"></label>
+<label>Class code<input id="new-class-code" placeholder="e.g. grade-8a"></label>
+<label>Teacher 4-digit PIN<input id="new-teacher-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••"></label>
+<button id="create-class" type="button">Create class</button><p id="class-create-status"></p><hr>
+<h2>Import students</h2><label>Class<select id="import-class"></select></label><label>CSV file<input id="csv" type="file" accept=".csv,text/csv"></label><button id="upload">Import CSV</button><p id="csv-status"></p><hr><h2>Fee reminders</h2><button id="fees">Queue reminders (mock)</button><p id="fee-status"></p><hr><h2>Student safety access</h2>
+<p class="safety-admin-description">Issue private student access codes only after guardian opt-in. An admin request never collects GPS automatically.</p>
+<label>Student<select id="safety-student"></select></label>
+<h3>Individual login PINs</h3>
+<label>Student PIN<input id="child-student-pin" type="password" inputmode="numeric" maxlength="4" placeholder="4 digits"></label>
+<label>Guardian PIN<input id="child-parent-pin" type="password" inputmode="numeric" maxlength="4" placeholder="Different 4 digits"></label>
+<button id="set-child-pins" type="button">Set Student / Parent PINs</button><p id="child-pin-status"></p><hr>
+<button id="issue-student-token" type="button">Issue private access code</button>
+<button id="request-student-location" type="button">Request one-time location</button>
+<p id="safety-admin-status" role="status"></p>
+<label id="issued-token-wrap" hidden>Copy this code privately; it is shown only once<textarea id="issued-student-token" readonly rows="3"></textarea></label>
+</aside></div></div>
 </section></main><footer>© SnapAttend · Powered by Safe-Reach · Built for low-bandwidth classrooms</footer>
 <div id="toast" role="status" hidden></div>
 <div id="install-banner" hidden><strong id="install-label">Install SnapAttend</strong><span id="install-hint"></span><button id="install-btn">Install</button><button id="dismiss">Dismiss</button></div>

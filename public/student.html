@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b6e66">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="SnapAttend student safety: voluntary one-time location sharing">
+  <title>Student Safety · SnapAttend</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/student.css">
+</head>
+<body>
+  <header><strong class="brand">✓ SnapAttend</strong><span class="student-brand">Safe-Reach</span><a href="/" class="back-link">Teacher / Admin</a></header>
+  <main class="student-shell">
+    <div class="student-heading"><span class="eyebrow">STUDENT SAFETY</span><h1>Your safety, your choice.</h1><p>Share your current location only when you decide. SnapAttend never tracks you in the background.</p></div>
+    <div id="preview-warning" class="preview-note" hidden><strong>Demo only — no messages or GPS data are sent.</strong><span>The optional location preview stays on this device. All students and requests shown in demo are fictional.</span></div>
+    <section id="student-gate" class="student-card">
+      <h2>Open your safety space</h2>
+      <p>Enter the private access code given to you by your school. Do not share it publicly.</p>
+      <label for="student-token">Student access code</label><input id="student-token" type="password" autocomplete="off" spellcheck="false" placeholder="Private access code">
+      <button id="student-login" class="primary">Continue securely</button>
+      <button id="student-demo" type="button" hidden>Explore student demo</button>
+      <p class="student-feedback" id="login-feedback" role="alert"></p>
+    </section>
+    <section id="student-panel" hidden>
+      <div class="student-profile student-card">
+        <div><span class="eyebrow">CURRENT STUDENT</span><h2 id="student-name">Student</h2><p id="student-class">Your school</p></div><button id="student-signout">Close session</button>
+      </div>
+      <div class="student-note"><strong>Before sharing</strong><p>Location uses your device GPS/Wi-Fi and may be approximate. This is one snapshot, not live tracking. School arrival is self-reported, not independently verified.</p></div>
+      <label class="consent-box" for="location-consent"><input type="checkbox" id="location-consent"><span>I choose to share my current location for the selected safety action. I understand it may be inaccurate.</span></label>
+      <div class="safety-tiles">
+        <article class="safety-tile"><span class="symbol checkin-symbol">✓</span><h3>Safe Check-In</h3><p>Arrived at school? Share your location once. No automatic tracking.</p><button id="safe-checkin" class="primary">I Reached</button></article>
+        <article class="safety-tile"><span class="symbol request-symbol">?</span><h3>Where is My Child?</h3><p>A verified guardian request appears below. You choose whether to respond.</p><button id="request-share" disabled>Share for request</button><p id="request-note" class="student-hint">No pending request</p></article>
+        <article class="safety-tile danger"><span class="symbol sos-symbol">!</span><h3>SOS — I need help</h3><p>If you are unsafe, contact emergency services or a trusted adult too. Sending an app alert is not guaranteed.</p><button id="student-sos" class="sos-button">SOS · Share my location</button></article>
+      </div>
+      <section class="student-card student-result"><h2>Location sharing status</h2><p id="location-status" aria-live="polite">No location has been requested.</p><div id="location-result" hidden><p id="location-accuracy"></p><a id="location-map" target="_blank" rel="noopener noreferrer">View one-time location on Google Maps</a><p id="delivery-status"></p></div></section>
+      <section class="student-card"><h2>Pending location requests</h2><div id="student-requests"><p>No pending requests</p></div></section>
+    </section>
+  </main>
+  <footer>SnapAttend Safe-Reach · Student-led sharing · No background GPS tracking</footer>
+  <script src="/mango.js" defer></script>
+  <script src="/student.js" defer></script>
+</body></html>
