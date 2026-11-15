@@ -34,7 +34,7 @@ CREATE INDEX IF NOT EXISTS attendance_class_date ON attendance_logs(class_id,dat
 CREATE INDEX IF NOT EXISTS attendance_emergencies ON attendance_logs(emergency_flag,acknowledged_at);
 CREATE TABLE IF NOT EXISTS sessions (
  token_hash TEXT PRIMARY KEY, institution_id TEXT NOT NULL REFERENCES institutions(id),
- class_id TEXT, role TEXT NOT NULL CHECK(role IN ('admin','teacher')),
+ class_id TEXT, role TEXT NOT NULL CHECK(role IN ('admin','teacher','student','parent')),
  expires_at TEXT NOT NULL, student_id TEXT
 );
 CREATE TABLE IF NOT EXISTS notification_jobs (
