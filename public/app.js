@@ -13,11 +13,136 @@ async function api(path,opt){opt=opt||{};opt.credentials='same-origin';if(opt.bo
 var r=await fetch(path,opt),j=await r.json().catch(function(){return {};});if(!r.ok)throw Error(j.error||'Request failed');return j;}
 function refreshNetwork(){$('net').textContent=state.demo?'UI preview':navigator.onLine?'Online':'Offline';if(navigator.onLine&&!state.demo)sync();}
 window.addEventListener('online',refreshNetwork);window.addEventListener('offline',refreshNetwork);
-$('role').addEventListener('change',function(){$('class-wrap').hidden=$('role').value!=='teacher';});
-$('login-form').addEventListener('submit',async function(e){e.preventDefault();$('error').textContent='';try{await api('/api/auth/login',{method:'POST',body:{institution_code:$('school').value.trim(),class_code:$('class').value.trim(),role:$('role').value,password:$('password').value}});$('password').value='';await init();}catch(err){$('error').textContent=err.message;}});
-$('logout').addEventListener('click',async function(){if(!state.demo){try{await api('/api/auth/logout',{method:'POST'});}catch(e){}}state.demo=false;state.session=null;$('issued-student-token').value='';$('issued-token-wrap').hidden=true;$('desk').hidden=true;$('login').hidden=false;$('logout').hidden=true;});
-async function init(){var me=await api('/api/auth/me');state.session=me.session;var result=await api('/api/classes');state.classes=result.classes;$('login').hidden=true;$('desk').hidden=false;$('logout').hidden=false;$('teacher').hidden=state.session.role!=='teacher';$('admin').hidden=state.session.role!=='admin';$('today').textContent=new Date().toLocaleDateString();$('date').value=today();
-if(state.session.role==='teacher'){state.classId=state.classes[0]&&state.classes[0].id;$('title').textContent=state.classes[0]?.name||'No class assigned';await loadRoster();}else{$('title').textContent='Safety & operations';var sel=$('import-class');sel.textContent='';state.classes.forEach(function(c){var o=m('option','',c.name);o.value=c.id;sel.appendChild(o);});await admin();await refreshStudentChoices();}await sync();}
+var academySearchTimer=null;
+function setMode(mode){
+ var signingIn=mode==='signin';
+ $('login-form').hidden=!signingIn;$('register-form').hidden=signingIn;
+ $('tab-signin').classList.toggle('is-active',signingIn);
+ $('tab-register').classList.toggle('is-active',!signingIn);
+ $('tab-signin').setAttribute('aria-selected',signingIn?'true':'false');
+ $('tab-register').setAttribute('aria-selected',signingIn?'false':'true');
+}
+$('tab-signin').addEventListener('click',function(){setMode('signin');});
+$('tab-register').addEventListener('click',function(){setMode('register');});
+function setRole(role){
+ $('role').value=role;
+ var isFamily=role==='family';
+ $('family-role-wrap').hidden=!isFamily;
+ $('class-wrap').hidden=role==='admin';
+ $('identity-wrap').hidden=!isFamily;
+ $('class').required=role!=='admin';
+ $('roll').required=isFamily;
+ document.querySelectorAll('.role-pill').forEach(function(pill){
+  var active=pill.getAttribute('data-role')===role;
+  pill.classList.toggle('is-selected',active);
+  pill.setAttribute('aria-pressed',active?'true':'false');
+ });
+}
+document.querySelectorAll('.role-pill').forEach(function(pill){
+ pill.addEventListener('click',function(){setRole(pill.getAttribute('data-role'));});
+});
+async function loadAcademies(search){
+ var previous=$('school').value;
+ try{
+  var data=await api('/api/academies'+(search?'?search='+encodeURIComponent(search):''));
+  var sel=$('school');sel.textContent='';
+  var placeholder=m('option','','Select an academy');placeholder.value='';sel.appendChild(placeholder);
+  data.academies.forEach(function(academy){
+   var option=m('option','',academy.name+' · '+academy.code);option.value=academy.code;sel.appendChild(option);
+  });
+  if(previous&&data.academies.some(function(item){return item.code===previous;}))sel.value=previous;
+  if(!data.academies.length){var none=m('option','','No academy found');none.disabled=true;sel.appendChild(none);}
+ }catch(e){
+  $('error').textContent='Cannot load academies. If this is a UI preview, select a Demo below.';
+ }
+}
+$('academy-search').addEventListener('input',function(){
+ clearTimeout(academySearchTimer);
+ var search=$('academy-search').value.trim();
+ academySearchTimer=setTimeout(function(){loadAcademies(search);},220);
+});
+$('reg-name').addEventListener('blur',function(){
+ if($('reg-code').value)return;
+ $('reg-code').value=$('reg-name').value.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,32);
+});
+$('login-form').addEventListener('submit',async function(e){
+ e.preventDefault();$('error').textContent='';
+ var role=$('role').value==='family'?$('family-role').value:$('role').value;
+ var pin=$('password').value;
+ if(!/^[0-9]{4}$/.test(pin)){$('error').textContent='Enter your 4-digit PIN';return;}
+ try{
+  await api('/api/auth/login',{method:'POST',body:{
+   institution_code:$('school').value,class_code:role==='admin'?'':$('class').value.trim(),
+   roll_no:role==='student'||role==='parent'?$('roll').value.trim():'',
+   role:role,pin:pin
+  }});
+  $('password').value='';
+  await init();
+ }catch(err){$('error').textContent=err.message;}
+});
+$('register-form').addEventListener('submit',async function(e){
+ e.preventDefault();$('reg-error').textContent='';
+ var pin=$('reg-pin').value,confirm=$('reg-confirm').value;
+ if(!/^[0-9]{4}$/.test(pin)||pin!==confirm){$('reg-error').textContent='Create matching 4-digit Admin PINs';return;}
+ try{
+  var result=await api('/api/academies/register',{method:'POST',body:{
+   name:$('reg-name').value.trim(),kind:$('reg-kind').value,
+   code:$('reg-code').value.trim().toLowerCase(),admin_pin:pin,confirm_pin:confirm,
+   public_listing:$('reg-listing').checked
+  }});
+  $('reg-pin').value='';$('reg-confirm').value='';
+  notify('Academy created. Set up a class and teacher PIN.');
+  await init();
+ }catch(err){$('reg-error').textContent=err.message;}
+});
+setRole('teacher');
+$('logout').addEventListener('click',async function(){if(!state.demo){try{await api('/api/auth/logout',{method:'POST'});}catch(e){}}state.demo=false;state.session=null;document.body.classList.remove('workspace');$('issued-student-token').value='';$('issued-token-wrap').hidden=true;$('desk').hidden=true;$('login').hidden=false;$('logout').hidden=true;});
+async function init(){
+ var me=await api('/api/auth/me');
+ state.session=me.session;state.classes=[];
+ var role=state.session.role;
+ if(role==='admin'||role==='teacher'){
+  state.classes=(await api('/api/classes')).classes;
+ }
+ $('login').hidden=true;$('desk').hidden=false;$('logout').hidden=false;
+ $('teacher').hidden=role!=='teacher';$('admin').hidden=role!=='admin';
+ $('family').hidden=role!=='student'&&role!=='parent';
+ document.body.classList.add('workspace');
+ $('today').textContent=new Date().toLocaleDateString();$('date').value=today();
+ if(role==='teacher'){
+  state.classId=state.classes[0]&&state.classes[0].id;
+  $('title').textContent=state.classes[0]?state.classes[0].name:'No class assigned';
+  await loadRoster();
+ }else if(role==='admin'){
+  $('title').textContent=(me.academy&&me.academy.name||'Academy')+' · Workspace';
+  var sel=$('import-class');sel.textContent='';
+  state.classes.forEach(function(item){var option=m('option','',item.name);option.value=item.id;sel.appendChild(option);});
+  await admin();await refreshStudentChoices();
+ }else {
+  $('title').textContent=role==='parent'?'Guardian workspace':'Student workspace';
+  await loadFamily();
+ }
+ if(role==='admin'||role==='teacher')await sync();
+}
+async function loadFamily(){
+ var area=$('family-records');area.textContent='';
+ if(state.demo){
+  $('family-title').textContent='Example child · Attendance';
+  $('family-school').textContent='Demo Academy · Grade 8A';
+  area.appendChild(m('p','','Demo only — no student information is retrieved or saved.'));
+  return;
+ }
+ try{
+  var result=await api('/api/account/overview');
+  $('family-title').textContent=result.student.name+' · Attendance';
+  $('family-school').textContent=result.student.academy_name+' · '+result.student.class_name+' · Roll '+result.student.roll_no;
+  if(!result.attendance.length)area.appendChild(m('p','','No attendance records yet.'));
+  result.attendance.forEach(function(item){
+   var line=m('p','',item.date+' · '+(item.status==='absent'?'Absent':'Present'));
+   area.appendChild(line);
+  });
+ }catch(err){area.appendChild(m('p','','Could not load your attendance: '+err.message));}
+}
 async function loadRoster(){if(!state.classId)return;var key='sa-roster:'+state.classId;try{state.roster=(await api('/api/classes/'+state.classId+'/roster')).students;store(key,state.roster);}catch(e){state.roster=read(key,[]);notify('Offline roster loaded');}state.absent={};state.submitted=false;try{var records=(await api('/api/classes/'+state.classId+'/attendance/'+$('date').value)).records;if(records.length){state.submitted=true;records.forEach(function(x){if(x.status==='absent')state.absent[x.student_id]=true;});}}catch(e){}draw();}
 function draw(){var root=$('roster');root.textContent='';state.roster.forEach(function(s){var r=m('div','student'),avatar=m('span','avatar',s.name.charAt(0)),info=m('div','student-info'),title=m('strong','',s.name),roll=m('small','','Roll '+s.roll_no),button=m('button',state.absent[s.id]?'absent':'',state.absent[s.id]?'Absent':'Present');info.appendChild(title);info.appendChild(roll);button.disabled=state.submitted;button.setAttribute('aria-pressed',state.absent[s.id]?'true':'false');button.addEventListener('click',function(){if(state.absent[s.id])delete state.absent[s.id];else state.absent[s.id]=true;draw();});r.appendChild(avatar);r.appendChild(info);r.appendChild(button);root.appendChild(r);});if(!state.roster.length)root.appendChild(m('p','','No students. Ask admin to import a CSV.'));var a=Object.keys(state.absent).length;$('total').textContent=state.roster.length;$('present').textContent=state.roster.length-a;$('absent').textContent=a;$('submit').disabled=state.demo||state.submitted||!state.roster.length;$('submit').textContent=state.demo?'Preview only · saving disabled':state.submitted?'Submitted':'Submit attendance';$('queue').textContent=read(queueKey,[]).length+' submission(s) awaiting sync';}
 $('date').addEventListener('change',loadRoster);
