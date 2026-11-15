@@ -1,11 +1,11 @@
 import {Database} from 'bun:sqlite';
-import {mkdirSync,readFileSync} from 'node:fs';
-import {join} from 'node:path';
 const dir=process.env.DATA_DIR||'./data';
-mkdirSync(dir,{recursive:true});
-export const db=new Database(join(dir,'snapattend.sqlite'),{create:true});
+await Bun.import {Database} from 'bun:sqlite';
+const dir=process.env.DATA_DIR||'./data';
+mkdir -p ${dir}`.quiet();
+export const db=new Database(`${dir}/snapattend.sqlite`,{create:true});
 db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
-db.exec(readFileSync(new URL('./schema.sql',import.meta.url),'utf8'));
+db.exec(await Bun.file(new URL('./schema.sql',import.meta.url)).text());
 export const all=<T=any>(sql:string,...a:any[]):T[]=>db.query(sql).all(...a) as T[];
 export const one=<T=any>(sql:string,...a:any[]):T|null=>(db.query(sql).get(...a) as T|null);
 export const exec=(sql:string,...a:any[])=>db.query(sql).run(...a);
