@@ -52,3 +52,40 @@ CREATE TABLE IF NOT EXISTS homework_broadcasts (
  date TEXT NOT NULL, audio_path TEXT, mime_type TEXT, transcript_text TEXT,
  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Student device access is explicitly issued by an administrator. Raw tokens never enter SQLite.
+CREATE TABLE IF NOT EXISTS student_access_tokens (
+  token_hash TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL UNIQUE REFERENCES students(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL,
+  issued_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS student_access_expiry ON student_access_tokens(expires_at);
+
+-- A parent request never reveals location by itself. A student must choose to share.
+CREATE TABLE IF NOT EXISTS location_requests (
+  id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  requested_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','shared','expired'))
+);
+CREATE INDEX IF NOT EXISTS location_request_lookup ON location_requests(student_id,status,expires_at);
+
+-- Precise coordinates are transient (24h maximum in active DB; production backups require separate policy).
+CREATE TABLE IF NOT EXISTS safety_events (
+  id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  institution_id TEXT NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK(kind IN ('checkin','sos','parent_request')),
+  latitude REAL NOT NULL CHECK(latitude BETWEEN -90 AND 90),
+  longitude REAL NOT NULL CHECK(longitude BETWEEN -180 AND 180),
+  accuracy_m REAL NOT NULL,
+  observed_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  notification_status TEXT NOT NULL DEFAULT 'not_configured',
+  location_request_id TEXT REFERENCES location_requests(id)
+);
+CREATE INDEX IF NOT EXISTS safety_events_recent ON safety_events(institution_id,created_at);
+CREATE INDEX IF NOT EXISTS safety_events_expiry ON safety_events(expires_at);
